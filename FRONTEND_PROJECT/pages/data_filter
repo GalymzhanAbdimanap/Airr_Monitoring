@@ -1,0 +1,56 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+from datetime import datetime, timedelta
+import requests
+
+st.title("📊 Сравнение данных по станциям")
+
+# Выбор дат
+start_date = st.date_input("Начальная дата", datetime.today() - timedelta(days=7))
+end_date = st.date_input("Конечная дата", datetime.today())
+
+# Получаем список станций из бэка
+stations_list = requests.get("http://172.20.107.4:8855/stations/").json().get("stations", [])
+station_names = [s["device_name"] for s in stations_list]
+
+col1, col2 = st.columns(2)
+with col1:
+    station1 = st.selectbox("Станция 1", station_names)
+with col2:
+    station2 = st.selectbox("Станция 2", [s for s in station_names if s != station1])
+
+# Выбор метрик
+metrics = ["pm25", "pm10", "co", "no2", "so2"]
+selected_metric = st.selectbox("Метрика", metrics)
+
+# Кнопка
+if st.button("Показать данные"):
+    with st.spinner("Загрузка данных..."):
+        url = "http://172.20.107.4:8855/pollution/filter/"
+        params = {
+            "start_date": start_date.strftime("%Y-%m-%d"),
+            "end_date": end_date.strftime("%Y-%m-%d"),
+            "station1": station1,
+            "station2": station2
+        }
+        data = requests.get(url, params=params).json()
+
+    if data:
+        df = pd.DataFrame(data)
+        if not df.empty:
+            # Сортируем по дате
+            df["datetime"] = pd.to_datetime(df["datetime"])
+            df = df.sort_values("datetime")
+
+            # График
+            fig = px.line(df, x="datetime", y=selected_metric, color="sensor_id",
+                          title=f"{selected_metric.upper()} на станциях {station1} и {station2}")
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Таблица
+            st.dataframe(df, use_container_width=True)
+        else:
+            st.warning("Нет данных за выбранный промежуток.")
+    else:
+        st.error("Ошибка при получении данных с сервера.")
