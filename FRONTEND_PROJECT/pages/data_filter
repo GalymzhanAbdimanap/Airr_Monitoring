@@ -11,7 +11,7 @@ start_date = st.date_input("Начальная дата", datetime.today() - tim
 end_date = st.date_input("Конечная дата", datetime.today())
 
 # Получаем список станций из бэка
-stations_list = requests.get("http://172.20.107.4:8855/stations/").json().get("stations", [])
+stations_list = requests.get("http://127.0.0.1:8855/stations/").json().get("stations", [])
 station_names = [s["device_name"] for s in stations_list]
 
 col1, col2 = st.columns(2)
@@ -27,7 +27,7 @@ selected_metric = st.selectbox("Метрика", metrics)
 # Кнопка
 if st.button("Показать данные"):
     with st.spinner("Загрузка данных..."):
-        url = "http://172.20.107.4:8855/pollution/filter/"
+        url = "http://127.0.0.1:8855/pollution/filter/"
         params = {
             "start_date": start_date.strftime("%Y-%m-%d"),
             "end_date": end_date.strftime("%Y-%m-%d"),
