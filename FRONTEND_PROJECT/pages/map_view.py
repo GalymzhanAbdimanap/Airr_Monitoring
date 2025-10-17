@@ -4,7 +4,7 @@ from streamlit_folium import st_folium
 import pandas as pd
 import requests
 
-API_URL = "http://172.20.107.4:8855"  # адрес API
+API_URL = "http://127.0.0.1:8855"  # адрес API
 
 st.set_page_config(page_title="🗺️ Карта Алматы", layout="wide")
 
