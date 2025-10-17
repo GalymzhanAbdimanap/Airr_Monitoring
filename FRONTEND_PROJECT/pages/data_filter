@@ -11,7 +11,7 @@ start_date = st.date_input("Начальная дата", datetime.today() - tim
 end_date = st.date_input("Конечная дата", datetime.today())
 
 # Получаем список станций из бэка
-stations_list = requests.get("http://127.0.0.1:8855/stations/").json().get("stations", [])
+stations_list = requests.get("http://172.20.107.4:8855/stations/").json().get("stations", [])
 station_names = [s["device_name"] for s in stations_list]
 
 col1, col2 = st.columns(2)
@@ -21,26 +21,29 @@ with col2:
     station2 = st.selectbox("Станция 2", [s for s in station_names if s != station1])
 
 # Выбор метрик
-metrics = ["pm25", "pm10", "co", "no2", "so2"]
+metrics = ["pm25", "pm10", "co2", "rh", "temp", "etvoc"]
 selected_metric = st.selectbox("Метрика", metrics)
 
 # Кнопка
 if st.button("Показать данные"):
     with st.spinner("Загрузка данных..."):
-        url = "http://127.0.0.1:8855/pollution/filter/"
+        url = "http://172.20.107.4:8855/pollution/filter/"
         params = {
-            "start_date": start_date.strftime("%Y-%m-%d"),
-            "end_date": end_date.strftime("%Y-%m-%d"),
+            "start_date": start_date.strftime("%Y-%m-%d 00:00:00"),
+            "end_date": end_date.strftime("%Y-%m-%d 00:00:00"),
             "station1": station1,
             "station2": station2
         }
         data = requests.get(url, params=params).json()
-
+    print(start_date.strftime("%Y-%m-%d 00:00:00"))
+    print(end_date.strftime("%Y-%m-%d 23:59:59"))
+    print(station1)
+    print(station2)
     if data:
         df = pd.DataFrame(data)
         if not df.empty:
             # Сортируем по дате
-            df["datetime"] = pd.to_datetime(df["datetime"])
+            df["datetime"] = pd.to_datetime(df["datetime"], format="mixed", errors="coerce")
             df = df.sort_values("datetime")
 
             # График
