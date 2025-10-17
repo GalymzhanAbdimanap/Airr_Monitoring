@@ -10,7 +10,7 @@ if not data.empty:
     station_ids = data["sensor_id"].unique().tolist()
     selected_station = st.selectbox("Выберите станцию:", station_ids)
 
-    pollutants = ["pm25", "pm10", "co", "no2"]
+    pollutants = ["pm25", "pm10", "co2", "rh", "temp", "etvoc"]
     selected_pollutant = st.radio("Выберите параметр для отображения:", pollutants)
 
     filtered_data = data[data["sensor_id"] == selected_station]
