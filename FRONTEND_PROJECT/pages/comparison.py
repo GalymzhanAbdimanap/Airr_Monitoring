@@ -15,7 +15,7 @@ if not data.empty:
     with col2:
         station_2 = st.selectbox("Вторая станция:", [s for s in station_ids if s != station_1], key="station2")
 
-    pollutants = ["pm25", "pm10", "co", "no2"]
+    pollutants = ["pm25", "pm10", "co2", "rh", "temp", "etvoc"]
     selected_pollutant = st.radio("Выберите параметр для сравнения:", pollutants, key="compare_pollutant")
 
     filtered_data = data[data["sensor_id"].isin([station_1, station_2])]
