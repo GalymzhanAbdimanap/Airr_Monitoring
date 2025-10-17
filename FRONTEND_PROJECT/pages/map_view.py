@@ -4,7 +4,7 @@ from streamlit_folium import st_folium
 import pandas as pd
 import requests
 
-API_URL = "http://127.0.0.1:8855"  # адрес API
+API_URL = "http://172.20.107.4:8855"  # адрес API
 
 st.set_page_config(page_title="🗺️ Карта Алматы", layout="wide")
 
@@ -55,7 +55,10 @@ for idx, row in data.iterrows():
             f"<b>{row.get('sensor_id', 'N/A')}</b><br>"
             f"PM2.5: {row.get('pm25', 'N/A')}<br>"
             f"PM10: {row.get('pm10', 'N/A')}<br>"
-            f"SO₂: {row.get('so2', 'N/A')}"
+            f"CO₂: {row.get('co2', 'N/A')}<br>"
+            f"RH: {row.get('rh', 'N/A')}<br>"
+            f"eTVOC: {row.get('etvoc', 'N/A')}<br>"
+            f"Temp: {row.get('temp', 'N/A')}"
         ),
         icon=folium.Icon(color=color, icon="info-sign")
     ).add_to(m)
