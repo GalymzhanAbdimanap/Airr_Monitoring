@@ -4,7 +4,7 @@ import asyncio
 from fastapi import FastAPI, WebSocket, Query
 from datetime import datetime, timedelta
 
-DB_FILE = "DATABASE/air_quality_cleaned.db"
+DB_FILE = "DATABASE/air_quality_cleaned_v4.db"
 
 app = FastAPI()
 
@@ -13,7 +13,7 @@ def get_pollution_data(start_date=None, end_date=None, station_id=None):
     cursor = conn.cursor()
 
     query = """
-        SELECT s.device_name, a.pm25, a.pm10, a.co, a.no2, a.so2, a.datetime
+        SELECT s.device_name, a.pm25, a.pm10, a.co2, a.rh, a.temp, a.etvoc, a.datetime
         FROM air_data a
         JOIN stations s ON a.station_id = s.id
     """
@@ -39,7 +39,7 @@ def get_pollution_data(start_date=None, end_date=None, station_id=None):
     
     return [
         {"sensor_id": row[0], "pm25": row[1], "pm10": row[2],
-         "co": row[3], "no2": row[4], "so2": row[5], "datetime": row[6]}
+         "co2": row[3], "rh": row[4], "temp": row[5], "etvoc": row[6], "datetime": row[7]}
         for row in rows
     ]
 
@@ -77,7 +77,7 @@ def get_filtered_data(start_date, end_date, stations):
 
     placeholders = ",".join(["?"]*len(stations))
     query = f"""
-        SELECT s.device_name, a.datetime, a.pm25, a.pm10, a.co, a.no2, a.so2
+        SELECT s.device_name, a.datetime, a.pm25, a.pm10, a.co2, a.rh, a.temp, a.etvoc
         FROM air_data a
         JOIN stations s ON a.station_id = s.id
         WHERE s.device_name IN ({placeholders})
@@ -85,7 +85,7 @@ def get_filtered_data(start_date, end_date, stations):
         ORDER BY a.datetime DESC
     """
 
-    cursor.execute(query, (*stations, start_date, end_date))
+    cursor.execute(query, (*stations, start_date, f"{end_date[:10]} 23:59:59"))
     rows = cursor.fetchall()
     conn.close()
 
@@ -95,9 +95,10 @@ def get_filtered_data(start_date, end_date, stations):
             "datetime": row[1],
             "pm25": row[2],
             "pm10": row[3],
-            "co": row[4],
-            "no2": row[5],
-            "so2": row[6]
+            "co2": row[4],
+            "rh": row[5],
+            "temp": row[6],
+            "etvoc": row[7]
         }
         for row in rows
     ]
@@ -139,7 +140,7 @@ def pollution_last3days(station_id: str = Query(..., description="ID станц�
     # 2. Берём все записи за последние 3 дня от last_date
     cursor.execute(
         """
-        SELECT s.device_name, a.pm25, a.pm10, a.co, a.no2, a.so2, a.datetime
+        SELECT s.device_name, a.pm25, a.pm10, a.co2, a.rh, a.temp, a.etvoc, a.datetime
         FROM air_data a
         JOIN stations s ON a.station_id = s.id
         WHERE s.device_name = ?
@@ -152,8 +153,8 @@ def pollution_last3days(station_id: str = Query(..., description="ID станц�
     conn.close()
 
     return {"pollution": [
-        {"sensor_id": r[0], "pm25": r[1], "pm10": r[2], "co": r[3],
-         "no2": r[4], "so2": r[5], "datetime": r[6]}
+        {"sensor_id": r[0], "pm25": r[1], "pm10": r[2], "co2": r[3],
+         "rh": r[4], "temp": r[5], "etvoc": r[6], "datetime": r[7]}
         for r in rows
     ]}
 
@@ -163,7 +164,7 @@ def pollution_today():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT s.device_name, s.latitude, s.longitude, a.pm25, a.pm10, a.co, a.no2, a.so2, a.datetime
+        SELECT s.device_name, s.latitude, s.longitude, a.pm25, a.pm10, a.co2, a.rh, a.temp, a.etvoc, a.datetime
         FROM stations s
         LEFT JOIN air_data a ON a.station_id = s.id
         AND DATE(a.datetime) = DATE('now')
@@ -178,10 +179,11 @@ def pollution_today():
             "lon": r[2],
             "pm25": r[3] if r[3] is not None else "N/A",
             "pm10": r[4] if r[4] is not None else "N/A",
-            "co": r[5] if r[5] is not None else "N/A",
-            "no2": r[6] if r[6] is not None else "N/A",
-            "so2": r[7] if r[7] is not None else "N/A",
-            "datetime": r[8] if r[8] is not None else "N/A"
+            "co2": r[5] if r[5] is not None else "N/A",
+            "rh": r[6] if r[6] is not None else "N/A",
+            "temp": r[7] if r[7] is not None else "N/A",
+            "etvoc": r[8] if r[8] is not None else "N/A",
+            "datetime": r[9] if r[9] is not None else "N/A"
         }
         for r in rows
     ]}
@@ -194,7 +196,7 @@ def pollution_latest():
 
     cursor.execute("""
         SELECT s.device_name, s.latitude, s.longitude,
-               a.pm25, a.pm10, a.co, a.no2, a.so2, a.datetime
+               a.pm25, a.pm10, a.co2, a.rh, a.temp, a.etvoc, a.datetime
         FROM stations s
         LEFT JOIN (
             SELECT ad1.*
@@ -218,10 +220,11 @@ def pollution_latest():
                 "lon": r[2],
                 "pm25": r[3] if r[3] is not None else "N/A",
                 "pm10": r[4] if r[4] is not None else "N/A",
-                "co": r[5] if r[5] is not None else "N/A",
-                "no2": r[6] if r[6] is not None else "N/A",
-                "so2": r[7] if r[7] is not None else "N/A",
-                "datetime": r[8] if r[8] is not None else "N/A"
+                "co2": r[5] if r[5] is not None else "N/A",
+                "rh": r[6] if r[6] is not None else "N/A",
+                "temp": r[7] if r[7] is not None else "N/A",
+                "etvoc": r[8] if r[8] is not None else "N/A",
+                "datetime": r[9] if r[9] is not None else "N/A"
             }
             for r in rows
         ]
